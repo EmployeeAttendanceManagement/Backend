@@ -3,8 +3,74 @@ const connectDB=require("./config/database");
 const app=express();
 
 const User=require("../src/models/user");
+const Attendance=require("../src/models/attendance");
+const {validateSignUpData}=require("../src/utils/validation");
+
+const bcrypt=require("bcrypt");
 
 app.use(express.json());
+
+
+
+/*--Attendance APIs-- */
+
+app.post("/attendance",async(req,res)=>{
+    const {userId,latitude,longitude}=req.body;
+    try{
+        const attendance=new Attendance({
+            user:userId,
+            checkInLocation:{latitude,longitude}
+        });
+        await attendance.save();
+        res.status(200).send("Attendance Marked Successfully!");
+    }
+    catch(err){
+        res.send(400).send("Error on Marking attendance "+err);
+    }
+})
+
+
+app.patch("/attendance/:id", async (req, res) => {
+    const attendanceId = req.params.id;
+    const { latitude, longitude } = req.body;
+    try {
+      const updatedAttendance = await Attendance.findByIdAndUpdate(
+        attendanceId,
+        {
+          checkOutTime: Date.now(),
+          checkOutLocation: { latitude, longitude }
+        },
+        { new: true, runValidators: true }
+      );
+      if (!updatedAttendance) {
+        return res.status(404).send("Attendance record not found");
+      }
+      res.status(200).send("Attendance check-out updated successfully!");
+    } catch (err) {
+      res.status(400).send("Error updating check-out time: " + err);
+    }
+  });
+  
+
+
+app.patch('/attendance/:id/leave',async(req,res)=>{
+    const attendanceId=req.params.id;
+    const {leaveStatus}=req.body;
+
+    try{
+        await Attendance.findByIdAndUpdate(attendanceId,{leaveStatus},{new:true,runValidators:true});
+        res.status(200).send("Atendance leave status updated Successfully!");
+    }
+    catch(err){
+        res.status(400).send("Error Updating leave status: "+err);
+    }
+})
+
+
+
+
+
+/*--User APIs--*/
 
 
 //Working well
@@ -70,10 +136,46 @@ app.get("/feed",async(req,res)=>{
 })
 
 
+//login working well
+app.post("/login",async(req,res)=>{
+    try{
+        const {emailId,password}=req.body;
+        const user=await User.findOne({emailId:emailId});
+
+        if(!user){
+            throw new Error("Invalid Credentials");
+        }
+        
+        const isPasswordValid=await bcrypt.compare(password,user.password);
+
+        if(isPasswordValid){
+            res.send("Login Successfull!!!");
+        }
+        else{
+            throw new Error("Invalid Credentials");
+        }
+    }
+    catch(err){
+        res.status(400).send("ERROR :"+err.message);
+    }
+})
+
+
+
 //SignUp API Working well
 app.post("/signup",async(req,res)=>{
-    const user=new User(req.body);
     try{
+        validateSignUpData(req);
+
+        const {firstName,lastName,emailId,password}=req.body;
+        const passwordHash=await bcrypt.hash(password,10);
+
+        const user=new User({
+            firstName,
+            lastName,
+            emailId,
+            password:passwordHash,
+        });
         await user.save();
         res.send("user added successfully");
     }

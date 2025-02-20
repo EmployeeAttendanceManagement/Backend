@@ -51,7 +51,7 @@ const userSchema= new mongoose.Schema({
     },
     photoUrl:{
         type:String,
-        defautl:"https://www.google.com/imgres?q=photo%20icon%20default&imgurl=https%3A%2F%2Fthumbs.dreamstime.com%2Fb%2Fdefault-avatar-profile-icon-vector-social-media-user-image-182145777.jpg&imgrefurl=https%3A%2F%2Fwww.dreamstime.com%2Fillustration%2Fdefault.html&docid=hzF46qAYeOYmJM&tbnid=XWg4py6RDWlHNM&vet=12ahUKEwiYmu_puc-LAxW7j68BHb5zBukQM3oECFcQAA..i&w=800&h=800&hcb=2&ved=2ahUKEwiYmu_puc-LAxW7j68BHb5zBukQM3oECFcQAA"
+        default:"https://www.google.com/imgres?q=photo%20icon%20default&imgurl=https%3A%2F%2Fthumbs.dreamstime.com%2Fb%2Fdefault-avatar-profile-icon-vector-social-media-user-image-182145777.jpg&imgrefurl=https%3A%2F%2Fwww.dreamstime.com%2Fillustration%2Fdefault.html&docid=hzF46qAYeOYmJM&tbnid=XWg4py6RDWlHNM&vet=12ahUKEwiYmu_puc-LAxW7j68BHb5zBukQM3oECFcQAA..i&w=800&h=800&hcb=2&ved=2ahUKEwiYmu_puc-LAxW7j68BHb5zBukQM3oECFcQAA"
     }
 },{timestamps:true});
 
