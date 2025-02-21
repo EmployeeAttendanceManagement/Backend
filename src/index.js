@@ -7,14 +7,18 @@ const Attendance=require("../src/models/attendance");
 const {validateSignUpData}=require("../src/utils/validation");
 
 const bcrypt=require("bcrypt");
+const cookieParser=require("cookie-parser");
+const jwt=require("jsonwebtoken");
+const {userAuth}=require("./middlewares/auth");
 
 app.use(express.json());
+app.use(cookieParser());
 
 
 
 /*--Attendance APIs-- */
 
-app.post("/attendance",async(req,res)=>{
+app.post("/attendance",userAuth,async(req,res)=>{
     const {userId,latitude,longitude}=req.body;
     try{
         const attendance=new Attendance({
@@ -31,7 +35,7 @@ app.post("/attendance",async(req,res)=>{
 
 
 //working well
-app.patch("/attendance/:id", async (req, res) => {
+app.patch("/attendance/:id", userAuth,async (req, res) => {
     const attendanceId = req.params.id;
     const { latitude, longitude } = req.body;
     try {
@@ -54,7 +58,7 @@ app.patch("/attendance/:id", async (req, res) => {
   
 
 //working well
-app.patch('/attendance/:id/leave', async (req, res) => {
+app.patch('/attendance/:id/leave', userAuth,async (req, res) => {
     const attendanceId = req.params.id;
 
     try {
@@ -76,7 +80,10 @@ app.patch('/attendance/:id/leave', async (req, res) => {
     }
 });
 
-app.patch('/attendance/:id/approve-leave', async (req, res) => {
+
+//Working well
+
+app.patch('/attendance/:id/approve-leave',userAuth, async (req, res) => {
     const attendanceId = req.params.id;
     const { approvReject } = req.body;
 
@@ -106,7 +113,7 @@ app.patch('/attendance/:id/approve-leave', async (req, res) => {
 
 
 //Working well
-app.get("/user",async(req,res)=>{
+app.get("/user",userAuth,async(req,res)=>{
     const name=req.body.firstName;
     try{
         const userData=await User.find({firstName:name});
@@ -119,7 +126,7 @@ app.get("/user",async(req,res)=>{
 
 
 //Working Well
-app.patch("/user/:userId",async(req,res)=>{
+app.patch("/user/:userId",userAuth,async(req,res)=>{
     const id=req.params?.userId;
     const data=req.body;
     try{
@@ -144,7 +151,7 @@ app.patch("/user/:userId",async(req,res)=>{
 
 
 //Working well
-app.delete("/user",async(req,res)=>{
+app.delete("/user",userAuth,async(req,res)=>{
     const userId=req?.body.userId;
     try{
         await User.findOneAndDelete({_id:userId});
@@ -157,7 +164,7 @@ app.delete("/user",async(req,res)=>{
 
 
 // Working fine
-app.get("/feed",async(req,res)=>{
+app.get("/feed",userAuth,async(req,res)=>{
     try{
         const users=await User.find({});
         res.send(users);
@@ -166,6 +173,19 @@ app.get("/feed",async(req,res)=>{
         res.send("Something went wrong in feed API");
     }
 })
+
+
+//Profile API
+app.get("/profile",userAuth,async (req,res)=>{
+    try{
+        const user=req.user;
+        res.send(user);
+    }
+    catch(err){
+        res.status(400).send("ERROR :"+err.message);
+    }
+})
+
 
 
 //login working well
@@ -178,9 +198,11 @@ app.post("/login",async(req,res)=>{
             throw new Error("Invalid Credentials");
         }
         
-        const isPasswordValid=await bcrypt.compare(password,user.password);
+        const isPasswordValid=await user.validatePassword(password);
 
         if(isPasswordValid){
+            const token=await user.getJWT();
+            res.cookie("token",token);
             res.send("Login Successfull!!!");
         }
         else{
@@ -215,6 +237,18 @@ app.post("/signup",async(req,res)=>{
         res.status(400).send("Error saving the user data signup API"+err);
     }
 })
+
+
+
+app.get('/auth/google/callback', 
+    passport.authenticate('google', { failureRedirect: '/login', session: false }),
+    (req, res) => {
+      const token = req.user.getJWT ? req.user.getJWT() : jwt.sign({ _id: req.user._id }, 'thr@ith@m963', { expiresIn: '7d' });
+      res.cookie("token", token, {
+          secure: "thr@ith@m963"
+      });
+      res.redirect('/');
+});
 
 
 
