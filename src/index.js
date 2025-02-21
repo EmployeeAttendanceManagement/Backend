@@ -30,6 +30,7 @@ app.post("/attendance",async(req,res)=>{
 })
 
 
+//working well
 app.patch("/attendance/:id", async (req, res) => {
     const attendanceId = req.params.id;
     const { latitude, longitude } = req.body;
@@ -52,20 +53,51 @@ app.patch("/attendance/:id", async (req, res) => {
   });
   
 
+//working well
+app.patch('/attendance/:id/leave', async (req, res) => {
+    const attendanceId = req.params.id;
 
-app.patch('/attendance/:id/leave',async(req,res)=>{
-    const attendanceId=req.params.id;
-    const {leaveStatus}=req.body;
+    try {
+        const attendance = await Attendance.findById(attendanceId);
 
-    try{
-        await Attendance.findByIdAndUpdate(attendanceId,{leaveStatus},{new:true,runValidators:true});
-        res.status(200).send("Atendance leave status updated Successfully!");
+        if (!attendance) {
+            return res.status(404).send("Attendance record not found");
+        }
+
+        if (attendance.leaveStatus === "none") {
+            attendance.leaveStatus = "pending";
+            await attendance.save();
+            return res.status(200).send("Attendance leave status updated to Pending successfully!");
+        } else {
+            return res.status(400).send("Leave status can only be updated from 'None' to 'Pending'");
+        }
+    } catch (err) {
+        res.status(500).send("Error Updating leave status: " + err);
     }
-    catch(err){
-        res.status(400).send("Error Updating leave status: "+err);
-    }
-})
+});
 
+app.patch('/attendance/:id/approve-leave', async (req, res) => {
+    const attendanceId = req.params.id;
+    const { approvReject } = req.body;
+
+    try {
+        const attendance = await Attendance.findById(attendanceId);
+
+        if (!attendance) {
+            return res.status(404).send("Attendance record not found");
+        }
+
+        if (attendance.leaveStatus === "pending") {
+            attendance.leaveStatus = approvReject;
+            await attendance.save();
+            return res.status(200).send(`Leave status updated to ${approvReject} successfully!`);
+        } else {
+            return res.status(400).send("Only 'Pending' requests can be approved or rejected.");
+        }
+    } catch (err) {
+        res.status(500).send("Error updating leave status: " + err);
+    }
+});
 
 
 
